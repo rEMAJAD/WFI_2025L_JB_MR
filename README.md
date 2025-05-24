@@ -9,18 +9,26 @@ Projekt realizuje funkcję pomiaru odległości za pomocą czujnika ultradźwię
 - Jan Bujok  
 - Michał Rempalski
 
-## Zależności
+## Wymagane biblioteki 
 
-Do poprawnego działania projektu wymagane są następujące biblioteki:
+```python
+import RPi.GPIO as GPIO
+from luma.core.interface.serial import spi
+from luma.oled.device import ssd1306
+from PIL import Image, ImageDraw, ImageFont
+```
 
+Instalacja:
 ```bash
-pip install RPi.GPIO luma.oled Pillow
+pip install RPi.GPIO
+pip install luma.oled
+pip install Pillow
 ```
 
 ## Opis działania programu
 
 1. **Inicjalizacja GPIO** – przypisanie odpowiednich pinów dla czujnika, diod oraz buzzera.
-2. **Inicjalizacja wyświetlacza OLED** – połączenie przez SPI, przygotowanie obszaru rysowania.
+2. **Inicjalizacja wyświetlacza OLED** – połączenie przez SPI, przygotowanie obszaru rysowania, ustawienie czcionki.
 3. **Pomiar odległości** – generacja impulsu wyzwalającego TRIG, oczekiwanie na sygnał ECHO, obliczenie czasu przelotu fali i przeliczenie go na odległość.
 4. **Sterowanie diodami LED** – w zależności od odległości aktywowane są odpowiednie diody.
 5. **Sterowanie buzzerem** – aktywacja przy odległości mniejszej niż 4 cm.
@@ -47,7 +55,10 @@ def kontrola_diod(dystans):
 ### Sterowanie buzzerem
 ```python
 def kontrola_buzzera(dystans):
-    # Włącza buzzer przy odległości < 4 cm
+    if dystans < 4:
+        GPIO.output(BUZZER, GPIO.HIGH)
+    else:
+        GPIO.output(BUZZER, GPIO.LOW)
 ```
 
 ### OLED
@@ -75,19 +86,9 @@ finally:
 ```
 
 ## Uruchomienie
-
-1. Podłącz komponenty zgodnie z przypisanymi pinami GPIO.
-2. Zainstaluj wymagane biblioteki.
-3. Uruchom plik `main.py`:
+Po zainstalowaniu wszystkich potrzebnych bibliotek i odpowiednim podłączeniu wszystkich elementów uruchom plik `Ekranodl.py`:
 
 ```bash
-python3 main.py
+python3 Ekranodl.py
 ```
 
-## Uwagi końcowe
-
-Kod nie zawiera obsługi wyjątków sprzętowych ani systemowych poza przerwaniem `KeyboardInterrupt`. Projekt służy wyłącznie celom edukacyjnym i został przygotowany jako realizacja zadania w ramach zajęć laboratoryjnych.
-
----
-
-Politechnika Warszawska – Projekt laboratoryjny
