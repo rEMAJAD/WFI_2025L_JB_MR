@@ -1,52 +1,62 @@
-# System pomiaru odległości na Raspberry Pi z OLED, diodami LED i buzzerem
+# System pomiaru odległości z wykorzystaniem Raspberry Pi, czujnika ultradźwiękowego, wyświetlacza OLED, diod LED i buzzera
 
 ## Opis projektu
-Ten projekt to prosty system pomiaru odległości z użyciem Raspberry Pi, czujnika ultradźwiękowego (HC-SR04), wyświetlacza OLED SSD1306, pięciu diod LED oraz buzzera. Odległość mierzona jest w czasie rzeczywistym i prezentowana na ekranie OLED, a LED-y i buzzer pełnią funkcję sygnalizacji wizualnej i dźwiękowej.
 
-## Funkcje
-- Pomiar odległości z wykorzystaniem czujnika HC-SR04
-- Wyświetlanie aktualnej odległości na ekranie OLED
-- Sygnalizacja odległości za pomocą 5 diod LED
-- Aktywacja buzzera przy bardzo małych odległościach (poniżej 4 cm)
+Projekt realizuje funkcję pomiaru odległości za pomocą czujnika ultradźwiękowego HC-SR04 podłączonego do Raspberry Pi. Wynik pomiaru prezentowany jest na wyświetlaczu OLED SSD1306. Dodatkowo, odległość sygnalizowana jest wizualnie (za pomocą pięciu diod LED) oraz dźwiękowo (poprzez buzzer). Projekt został zrealizowany w ramach zajęć laboratoryjnych.
 
+## Autorzy
 
-## Struktura kodu
+- Jan Bujok  
+- Michał Rempalski
+
+## Zależności
+
+Do poprawnego działania projektu wymagane są następujące biblioteki:
+
+```bash
+pip install RPi.GPIO luma.oled Pillow
+```
+
+## Opis działania programu
+
+1. **Inicjalizacja GPIO** – przypisanie odpowiednich pinów dla czujnika, diod oraz buzzera.
+2. **Inicjalizacja wyświetlacza OLED** – połączenie przez SPI, przygotowanie obszaru rysowania.
+3. **Pomiar odległości** – generacja impulsu wyzwalającego TRIG, oczekiwanie na sygnał ECHO, obliczenie czasu przelotu fali i przeliczenie go na odległość.
+4. **Sterowanie diodami LED** – w zależności od odległości aktywowane są odpowiednie diody.
+5. **Sterowanie buzzerem** – aktywacja przy odległości mniejszej niż 4 cm.
+6. **Wyświetlanie na OLED** – wynik pomiaru w centymetrach jest wyświetlany na ekranie.
+
+## Fragmenty kodu
 
 ### Pomiar odległości
 ```python
-def signal():
-    GPIO.output(TRIG, GPIO.LOW)
-    time.sleep(0.05)
-    GPIO.output(TRIG, GPIO.HIGH)
-    time.sleep(10e-6)
-    GPIO.output(TRIG, GPIO.LOW)
-
-def oczekiwanie_na_echo():
-    # Oczekiwanie na sygnał ECHO i pomiar czasu przelotu
-
 def odleglosc():
-    # Obliczenie odległości na podstawie czasu przelotu
+    signal()
+    czas = oczekiwanie_na_echo()
+    if czas:
+        return round(czas * 34300 / 2, 2)
+    return None
 ```
 
-### Sterowanie diodami LED
+### Sterowanie diodami
 ```python
 def kontrola_diod(dystans):
-    # Zapala odpowiednią ilość diod w zależności od odległości
+    # Zapala odpowiednią liczbę diod w zależności od dystansu
 ```
 
 ### Sterowanie buzzerem
 ```python
 def kontrola_buzzera(dystans):
-    # Włącza buzzer przy dystansie mniejszym niż 4 cm
+    # Włącza buzzer przy odległości < 4 cm
 ```
 
-### Wyświetlanie na OLED
+### OLED
 ```python
 def pokaz_na_ekranie(tekst):
-    # Rysuje tekst na ekranie OLED z wykorzystaniem PIL
+    # Wyświetla tekst na ekranie OLED
 ```
 
-### Pętla główna
+### Pętla główna programu
 ```python
 try:
     while True:
@@ -64,20 +74,20 @@ finally:
     GPIO.cleanup()
 ```
 
-## Uruchamianie
-1. Upewnij się, że wszystkie wymagane biblioteki są zainstalowane.
-2. Podłącz komponenty zgodnie ze swoim schematem.
-3. Uruchom skrypt:
+## Uruchomienie
+
+1. Podłącz komponenty zgodnie z przypisanymi pinami GPIO.
+2. Zainstaluj wymagane biblioteki.
+3. Uruchom plik `main.py`:
 
 ```bash
 python3 main.py
 ```
 
+## Uwagi końcowe
 
-## Autor
-Jan Bujok
-Michał Rempalski
+Kod nie zawiera obsługi wyjątków sprzętowych ani systemowych poza przerwaniem `KeyboardInterrupt`. Projekt służy wyłącznie celom edukacyjnym i został przygotowany jako realizacja zadania w ramach zajęć laboratoryjnych.
 
 ---
 
-
+Politechnika Warszawska – Projekt laboratoryjny
