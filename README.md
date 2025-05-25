@@ -34,39 +34,72 @@ pip install Pillow
 5. **Buzzer** – aktywowany, gdy dystans jest mniejszy niż 4 cm.
 6. **OLED** – wynik pomiaru (w cm) wyświetlany jest na ekranie.
 
-## Fragmenty kodu
+## Fragmenty kodu i ich opis
 
 ### Pomiar odległości
+
 ```python
+def signal():
+    GPIO.output(TRIG, GPIO.LOW)
+    time.sleep(0.05)
+    GPIO.output(TRIG, GPIO.HIGH)
+    time.sleep(10e-6)
+    GPIO.output(TRIG, GPIO.LOW)
+
+def oczekiwanie_na_echo():
+    czekanie = time.time() + 1
+    while GPIO.input(ECHO) == GPIO.LOW:
+        czas_poczatkowy = time.time()
+        if time.time() > czekanie:
+            return None
+    while GPIO.input(ECHO) == GPIO.HIGH:
+        czas_koncowy = time.time()
+        if time.time() > czekanie:
+            return None
+    return czas_koncowy - czas_poczatkowy
+
 def odleglosc():
     signal()
-    czas = oczekiwanie_na_echo()
-    if czas:
-        return round(czas * 34300 / 2, 2)
+    czas_przelotu = oczekiwanie_na_echo()
+    if czas_przelotu is not None:
+        return round(czas_przelotu * 34300 / 2, 2)
     return None
 ```
-Funkcja `odleglosc()` inicjuje pomiar, a następnie na podstawie czasu przelotu fali dźwiękowej oblicza odległość w centymetrach. Wzór uwzględnia prędkość dźwięku w powietrzu (34300 cm/s).
+
+Funkcje te odpowiadają za wysyłanie sygnału z czujnika oraz odczyt odpowiedzi. Na podstawie czasu przelotu impulsu obliczana jest odległość. Wynik zwracany jest w centymetrach.
 
 ---
 
 ### Sterowanie diodami LED
+
 ```python
 def kontrola_diod(dystans):
-    # Zapala odpowiednią liczbę diod w zależności od dystansu
-```
-W zależności od zmierzonej odległości funkcja włącza od 0 do 5 diod. Im mniejsza odległość, tym więcej diod się zapala.
+    diody = [D1, D2, D3, D4, D5]
+    if dystans < 5.3:
+        ilosc_diod = 5
+    elif dystans < 7:
+        ilosc_diod = 4
+    elif dystans < 11:
+        ilosc_diod = 3
+    elif dystans < 15:
+        ilosc_diod = 2
+    elif dystans < 20:
+        ilosc_diod = 1
+    else:
+        ilosc_diod = 0
 
-Próg działania:
-- < 5.3 cm → 5 diod
-- < 7 cm → 4 diody
-- < 11 cm → 3 diody
-- < 15 cm → 2 diody
-- < 20 cm → 1 dioda
-- ≥ 20 cm → 0 diod
+    for dioda in diody:
+        GPIO.output(dioda, GPIO.LOW)
+    for i in range(ilosc_diod):
+        GPIO.output(diody[i], GPIO.HIGH)
+```
+
+W zależności od zmierzonej odległości funkcja włącza odpowiednią liczbę diod – im bliżej znajduje się obiekt, tym więcej diod zostaje zapalonych.
 
 ---
 
 ### Sterowanie buzzerem
+
 ```python
 def kontrola_buzzera(dystans):
     if dystans < 4:
@@ -74,20 +107,27 @@ def kontrola_buzzera(dystans):
     else:
         GPIO.output(BUZZER, GPIO.LOW)
 ```
-Buzzer włącza się, gdy odległość spadnie poniżej 4 cm. W przeciwnym wypadku pozostaje wyłączony.
+
+Buzzer zostaje aktywowany tylko wtedy, gdy zmierzony dystans jest mniejszy niż 4 cm.
 
 ---
 
-### Wyświetlanie na ekranie OLED
+### Wyświetlanie wyniku na ekranie OLED
+
 ```python
 def pokaz_na_ekranie(tekst):
-    # Wyświetla tekst na ekranie OLED
+    obraz = Image.new("1", oled.size)
+    rysuj = ImageDraw.Draw(obraz)
+    rysuj.text((0, 20), tekst, font=font, fill=255)
+    oled.display(obraz)
 ```
-Rysuje tekst (np. "12.4 cm" albo "Brak odczytu") na ekranie OLED za pomocą biblioteki PIL. Tekst wyświetlany jest w rozdzielczości 128x64 piksele.
+
+Funkcja rysuje na ekranie tekst, którym może być wynik pomiaru (np. "12.3 cm") lub informacja o braku odczytu.
 
 ---
 
 ### Pętla główna
+
 ```python
 try:
     while True:
@@ -104,7 +144,8 @@ except KeyboardInterrupt:
 finally:
     GPIO.cleanup()
 ```
-Program działa w nieskończonej pętli. Co sekundę wykonuje pomiar, aktualizuje diody, buzzer i ekran. `KeyboardInterrupt` kończy program i zwalnia zasoby GPIO.
+
+Program działa w nieskończonej pętli. Co sekundę wykonywany jest nowy pomiar, aktualizowane są diody, buzzer i ekran OLED. Użycie `Ctrl+C` pozwala zakończyć działanie programu – wtedy czyszczone są zasoby GPIO.
 
 ## Uruchomienie
 
@@ -113,4 +154,3 @@ Po zainstalowaniu wszystkich potrzebnych bibliotek i odpowiednim podłączeniu w
 ```bash
 python3 Ekranodl.py
 ```
-
